@@ -24,6 +24,24 @@ type Request interface {
 	MarshalBinary() ([]byte, error)
 }
 
+// fieldsToJSON converts a list of fields to JSON.
+func fieldsToJSON(fields []string) string {
+	f := make(map[string]int, 0)
+	for _, field := range fields {
+		f[field] = 1
+	}
+	if j, err := json.Marshal(f); err == nil {
+		return string(j)
+	}
+
+	return ""
+}
+
+// buildUrl builds the request url
+func buildUrl(proto, host, property, collection string, port int) string {
+	return fmt.Sprintf("%s://%s:%d/%s/%s", proto, host, port, property, collection)
+}
+
 // Get stores Get parameters.
 type Get struct {
 	*Sort
@@ -40,33 +58,16 @@ type Get struct {
 	ETag         string
 }
 
-// fieldsToJSON converts a list of fields to JSON.
-func fieldsToJSON(fields []string) string {
-	f := make(map[string]int, 0)
-	for _, field := range fields {
-		f[field] = 1
-	}
-	if j, err := json.Marshal(f); err == nil {
-		return string(j)
-	}
-
-	return ""
-}
-
-// buildUrl builds the request url
-func buildUrl(proto, host, property, collection string, port int, metadata bool ) string {
-	if (metadata) {
-		return fmt.Sprintf("%s://%s:%d/%s/%s/count", proto, host, port, property, collection)
-	}
-	return fmt.Sprintf("%s://%s:%d/%s/%s", proto, host, port, property, collection)
-}
-
 // Initialize initializes the request.
 func (g *Get) Initialize(proto, host, property, bearer string, port int) error {
 	g.HTTPRequest = &HTTPRequest{
 		Method: http.MethodGet,
-		URL:    buildUrl(proto, host, property, g.Collection, port, g.Metadata),
+		URL:    buildUrl(proto, host, property, g.Collection, port),
 		Query:  make(map[string]string),
+	}
+
+	if g.Metadata {
+		g.HTTPRequest.URL = fmt.Sprintf("%s/count", g.HTTPRequest.URL)
 	}
 
 	if err := g.HTTPRequest.Initialize(); err != nil {
@@ -129,11 +130,11 @@ type Post struct {
 func (p *Post) Initialize(proto, host, property, bearer string, port int) error {
 	p.HTTPRequest = &HTTPRequest{
 		Method:  http.MethodPost,
-		URL:     buildUrl(proto, host, property, p.Collection, port, false),
+		URL:     buildUrl(proto, host, property, p.Collection, port),
 		Payload: bytes.NewBuffer(p.Body),
 		Query:   make(map[string]string),
 	}
-	
+
 	if p.ID != "" {
 		p.HTTPRequest.URL += fmt.Sprintf("/%s", p.ID)
 	}
@@ -171,7 +172,7 @@ type Put struct {
 func (p *Put) Initialize(proto, host, property, bearer string, port int) error {
 	p.HTTPRequest = &HTTPRequest{
 		Method:  http.MethodPut,
-		URL:     buildUrl(proto, host, property, p.Collection, port, false)
+		URL:     buildUrl(proto, host, property, p.Collection, port),
 		Payload: bytes.NewBuffer(p.Body),
 		Query:   make(map[string]string),
 	}
