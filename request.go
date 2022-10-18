@@ -27,6 +27,7 @@ type Request interface {
 // Get stores Get parameters.
 type Get struct {
 	*Sort
+	Metadata     bool
 	Compose      bool
 	ComposeAll   bool
 	ComposeLevel uint64
@@ -52,11 +53,19 @@ func fieldsToJSON(fields []string) string {
 	return ""
 }
 
+// buildUrl builds the request url
+func buildUrl(proto, host, property, collection string, port int, metadata bool ) string {
+	if (metadata) {
+		return fmt.Sprintf("%s://%s:%d/%s/%s/count", proto, host, port, property, collection)
+	}
+	return fmt.Sprintf("%s://%s:%d/%s/%s", proto, host, port, property, collection)
+}
+
 // Initialize initializes the request.
 func (g *Get) Initialize(proto, host, property, bearer string, port int) error {
 	g.HTTPRequest = &HTTPRequest{
 		Method: http.MethodGet,
-		URL:    fmt.Sprintf("%s://%s:%d/%s/%s", proto, host, port, property, g.Collection),
+		URL:    buildUrl(proto, host, property, g.Collection, port, g.Metadata),
 		Query:  make(map[string]string),
 	}
 
@@ -120,11 +129,11 @@ type Post struct {
 func (p *Post) Initialize(proto, host, property, bearer string, port int) error {
 	p.HTTPRequest = &HTTPRequest{
 		Method:  http.MethodPost,
-		URL:     fmt.Sprintf("%s://%s:%d/%s/%s", proto, host, port, property, p.Collection),
+		URL:     buildUrl(proto, host, property, p.Collection, port, false),
 		Payload: bytes.NewBuffer(p.Body),
 		Query:   make(map[string]string),
 	}
-
+	
 	if p.ID != "" {
 		p.HTTPRequest.URL += fmt.Sprintf("/%s", p.ID)
 	}
@@ -162,7 +171,7 @@ type Put struct {
 func (p *Put) Initialize(proto, host, property, bearer string, port int) error {
 	p.HTTPRequest = &HTTPRequest{
 		Method:  http.MethodPut,
-		URL:     fmt.Sprintf("%s://%s:%d/%s/%s", proto, host, port, property, p.Collection),
+		URL:     buildUrl(proto, host, property, p.Collection, port, false)
 		Payload: bytes.NewBuffer(p.Body),
 		Query:   make(map[string]string),
 	}
