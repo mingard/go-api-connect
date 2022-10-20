@@ -48,6 +48,7 @@ type Get struct {
 	Metadata     bool
 	Compose      bool
 	ComposeAll   bool
+	SkipCache    bool
 	ComposeLevel uint64
 	Collection   string
 	Page         uint64
@@ -80,6 +81,10 @@ func (g *Get) Initialize(proto, host, property, bearer string, port int) error {
 	g.HTTPRequest.SetParam("count", strconv.FormatUint(g.Limit, 10))
 	// Set auth header.
 	g.HTTPRequest.SetHeader("Authorization", fmt.Sprintf("Bearer %s", bearer))
+
+	if g.SkipCache {
+		g.HTTPRequest.SetParam("cache", strconv.FormatBool(false))
+	}
 
 	if g.Sort != nil {
 		g.HTTPRequest.SetParam("sort", g.Sort.String())
