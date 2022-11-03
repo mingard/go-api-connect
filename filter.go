@@ -6,7 +6,7 @@ package apiconnect
 import "fmt"
 
 const (
-	requestTimeout       = 5
+	requestTimeout       = 30
 	Regex                = "$regex"
 	LessThan             = "$lt"
 	LessThanOrEqualTo    = "$lte"
